@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Загрузить трек — HertMusic{% endblock %}
+
+{% block extra_head %}
+<style>
+  .upload-wrap {
+    max-width: 580px;
+    margin: 0 auto;
+    padding-top: 24px;
+  }
+  .upload-header {
+    margin-bottom: 32px;
+  }
+  .upload-header h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; }
+  .upload-header p { color: var(--text-2); font-size: 14px; margin-top: 8px; }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--bg-2);
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--orange);
+    background: var(--orange-glow-sm);
+  }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-zone .dz-icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-zone .dz-text { font-size: 14px; font-weight: 600; color: var(--text-2); }
+  .drop-zone .dz-sub { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+  .drop-zone .dz-filename {
+    font-size: 13px; color: var(--orange); font-weight: 600; margin-top: 10px;
+    display: none;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+
+  .preview-wrap {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-top: 8px;
+  }
+  .preview-img {
+    width: 60px; height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .preview-text { font-size: 13px; color: var(--text-2); }
+  .preview-name { font-weight: 600; color: var(--text); font-size: 14px; }
+
+  .rules {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .rules strong { color: var(--orange); }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+  }
+  .loading-state {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg-3);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--text-2);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div class="upload-header">
+    <h1>Загрузить трек</h1>
+    <p>Трек будет проверен модератором перед публикацией</p>
+  </div>
+
+  {% if error %}
+  <div class="error-msg">⚠️ {{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="success-msg">✅ {{ success }}</div>
+  {% endif %}
+
+  <div class="rules">
+    <strong>Правила:</strong> Только оригинальный контент или контент с правами.
+    Поддерживаются MP3, WAV, OGG, FLAC, M4A. Обложка — JPG или PNG.
+    Максимум 100 МБ.
+  </div>
+
+  <form method="post" action="/upload" enctype="multipart/form-data" id="upload-form">
+    <!-- Cover -->
+    <div class="form-group">
+      <label class="form-label">Обложка *</label>
+      <div class="drop-zone" id="cover-dz">
+        <input type="file" name="cover" accept="image/jpeg,image/png,image/webp"
+               id="cover-input" required>
+        <div class="dz-icon">🖼️</div>
+        <div class="dz-text">Нажми или перетащи обложку</div>
+        <div class="dz-sub">JPG, PNG, WEBP</div>
+        <div class="dz-filename" id="cover-fname"></div>
+      </div>
+      <div class="preview-wrap" id="cover-preview">
+        <img class="preview-img" id="cover-preview-img" alt="">
+        <div>
+          <div class="preview-name" id="cover-preview-name"></div>
+          <div class="preview-text">Обложка выбрана</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio -->
+    <div class="form-group">
+      <label class="form-label">Аудиофайл *</label>
+      <div class="drop-zone" id="audio-dz">
+        <input type="file" name="audio" accept="audio/*" id="audio-input" required>
+        <div class="dz-icon">🎵</div>
+        <div class="dz-text">Нажми или перетащи трек</div>
+        <div class="dz-sub">MP3, WAV, OGG, FLAC, M4A</div>
+        <div class="dz-filename" id="audio-fname"></div>
+      </div>
+    </div>
+
+    <!-- Title & Artist -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Название *</label>
+        <input class="form-input" type="text" name="title"
+               placeholder="Название трека" required maxlength="200"
+               value="{{ request.form.get('title', '') }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Артист(ы) *</label>
+        <input class="form-input" type="text" name="artist"
+               placeholder="Имя / несколько через запятую" required maxlength="200"
+               value="{{ request.form.get('artist', '') }}">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary submit-btn" id="submit-btn">
+      🚀 Отправить на проверку
+    </button>
+    <div class="loading-state" id="loading-state">
+      <div class="spinner"></div>
+      Загружаем файлы...
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Cover preview
+  document.getElementById('cover-input').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    document.getElementById('cover-fname').textContent = file.name;
+    document.getElementById('cover-fname').style.display = 'block';
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('cover-preview-img').src = e.target.result;
+      document.getElementById('cover-preview-name').textContent = file.name;
+      document.getElementById('cover-preview').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Audio filename
+  document.getElementById('audio-input').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    document.getElementById('audio-fname').textContent = file.name;
+    document.getElementById('audio-fname').style.display = 'block';
+  });
+
+  // Drag & drop visual
+  ['cover-dz', 'audio-dz'].forEach(id => {
+    const dz = document.getElementById(id);
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', () => dz.classList.remove('dragover'));
+  });
+
+  // Loading state on submit
+  document.getElementById('upload-form').addEventListener('submit', function() {
+    document.getElementById('submit-btn').style.display = 'none';
+    document.getElementById('loading-state').style.display = 'flex';
+  });
+</script>
+{% endblock %}
