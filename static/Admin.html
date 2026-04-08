@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}Модерация — HertMusic{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-header { margin-bottom: 32px; }
+  .admin-header h1 { font-size: 32px; font-weight: 800; }
+  .admin-header p { color: var(--text-2); font-size: 14px; margin-top: 6px; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 28px;
+    width: fit-content;
+    flex-wrap: wrap;
+  }
+  .tab {
+    font-size: 13px; font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-2);
+    border: none;
+    background: none;
+    font-family: 'Manrope', sans-serif;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--bg-card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .tab .badge {
+    font-size: 11px;
+    background: var(--orange);
+    color: white;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 800;
+  }
+  .tab.active[data-tab="approved"] .badge { background: #22c55e; }
+  .tab.active[data-tab="rejected"] .badge { background: #ef4444; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .mod-list { display: flex; flex-direction: column; gap: 14px; }
+
+  .mod-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+  .mod-card:hover { border-color: var(--border-hover); }
+
+  .mod-cover {
+    width: 70px; height: 70px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+  }
+  .mod-cover-ph {
+    width: 70px; height: 70px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+  }
+
+  .mod-info { flex: 1; min-width: 0; }
+  .mod-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .mod-artist { font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
+  .mod-meta { font-size: 11px; color: var(--text-3); margin-bottom: 12px; }
+
+  .mod-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-approve {
+    background: rgba(34,197,94,0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.3);
+    font-size: 13px; font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-approve:hover { background: rgba(34,197,94,0.25); }
+  .btn-reject {
+    background: rgba(239,68,68,0.12);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.3);
+    font-size: 13px; font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-reject:hover { background: rgba(239,68,68,0.22); }
+  .btn-listen {
+    background: var(--bg-3);
+    color: var(--text-2);
+    border: 1px solid var(--border);
+    font-size: 13px; font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-listen:hover { color: var(--text); border-color: var(--border-hover); }
+
+  .status-badge {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .badge-approved { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .badge-rejected { background: rgba(239,68,68,0.1); color: #f87171; }
+  .badge-pending  { background: rgba(255,92,0,0.15); color: var(--orange-2); }
+
+  .empty-tab {
+    padding: 48px 0;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 14px;
+  }
+  .empty-tab .icon { font-size: 40px; margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+  <h1>Модерация</h1>
+  <p>Прослушай трек и прими решение</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="pending" onclick="switchTab('pending')">
+    На проверке
+    {% if pending %}<span class="badge">{{ pending|length }}</span>{% endif %}
+  </button>
+  <button class="tab" data-tab="approved" onclick="switchTab('approved')">
+    Принято
+    {% if approved %}<span class="badge">{{ approved|length }}</span>{% endif %}
+  </button>
+  <button class="tab" data-tab="rejected" onclick="switchTab('rejected')">
+    Отклонено
+    {% if rejected %}<span class="badge">{{ rejected|length }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- Pending -->
+<div class="tab-panel active" id="tab-pending">
+  {% if pending %}
+  <div class="mod-list">
+    {% for song in pending %}
+    <div class="mod-card" id="song-card-{{ song.id }}">
+      <img class="mod-cover" src="/cover/{{ song.id }}" alt=""
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="mod-cover-ph" style="display:none">🎵</div>
+      <div class="mod-info">
+        <div class="mod-title">{{ song.title }}</div>
+        <div class="mod-artist">{{ song.artist }}</div>
+        <div class="mod-meta">
+          От: {{ song.uploader.telegram_first_name or song.uploader.telegram_username or '—' }}
+          · {{ song.created_at.strftime('%d.%m.%Y %H:%M') }}
+        </div>
+        <div class="mod-actions">
+          <button class="btn-listen" onclick="listenSong({{ song.id }}, {{ song.title|tojson }}, {{ song.artist|tojson }})">
+            ▶ Слушать
+          </button>
+          <button class="btn-approve" onclick="doAction({{ song.id }}, 'approve')">
+            ✅ Принять
+          </button>
+          <button class="btn-reject" onclick="doAction({{ song.id }}, 'reject')">
+            ❌ Отклонить
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-tab">
+    <div class="icon">🎉</div>
+    Нет треков на проверке
+  </div>
+  {% endif %}
+</div>
+
+<!-- Approved -->
+<div class="tab-panel" id="tab-approved">
+  {% if approved %}
+  <div class="mod-list">
+    {% for song in approved %}
+    <div class="mod-card">
+      <img class="mod-cover" src="/cover/{{ song.id }}" alt=""
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="mod-cover-ph" style="display:none">🎵</div>
+      <div class="mod-info">
+        <span class="status-badge badge-approved">✅ Принято</span>
+        <div class="mod-title">{{ song.title }}</div>
+        <div class="mod-artist">{{ song.artist }}</div>
+        <div class="mod-meta">{{ song.created_at.strftime('%d.%m.%Y') }}</div>
+        <div class="mod-actions">
+          <button class="btn-listen" onclick="listenSong({{ song.id }}, {{ song.title|tojson }}, {{ song.artist|tojson }})">▶ Слушать</button>
+          <button class="btn-reject" onclick="doAction({{ song.id }}, 'reject')">↩ Отклонить</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-tab"><div class="icon">📭</div>Пока ничего</div>
+  {% endif %}
+</div>
+
+<!-- Rejected -->
+<div class="tab-panel" id="tab-rejected">
+  {% if rejected %}
+  <div class="mod-list">
+    {% for song in rejected %}
+    <div class="mod-card">
+      <img class="mod-cover" src="/cover/{{ song.id }}" alt=""
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="mod-cover-ph" style="display:none">🎵</div>
+      <div class="mod-info">
+        <span class="status-badge badge-rejected">❌ Отклонено</span>
+        <div class="mod-title">{{ song.title }}</div>
+        <div class="mod-artist">{{ song.artist }}</div>
+        <div class="mod-meta">{{ song.created_at.strftime('%d.%m.%Y') }}</div>
+        <div class="mod-actions">
+          <button class="btn-approve" onclick="doAction({{ song.id }}, 'approve')">↩ Принять</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-tab"><div class="icon">🗑️</div>Отклонённых нет</div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+  }
+
+  function listenSong(id, title, artist) {
+    const song = {
+      id, title, artist,
+      audio_url: `/stream/${id}`,
+      cover_url: `/cover/${id}`
+    };
+    playlist = [song];
+    playSong(song, 0);
+  }
+
+  async function doAction(songId, action) {
+    const card = document.getElementById('song-card-' + songId);
+    if (card) {
+      card.style.opacity = '0.5';
+      card.style.pointerEvents = 'none';
+    }
+    try {
+      const res = await fetch('/api/admin/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ song_id: songId, action })
+      });
+      if (res.ok) {
+        setTimeout(() => location.reload(), 400);
+      } else {
+        if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
+        alert('Ошибка');
+      }
+    } catch(e) {
+      if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
+      alert('Ошибка сети');
+    }
+  }
+</script>
+{% endblock %}
