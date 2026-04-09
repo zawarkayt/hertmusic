@@ -14,6 +14,7 @@ from flask import (
 from models import db, User, Song
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
