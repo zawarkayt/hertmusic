@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}HertMusic — Слушай всё{% endblock %}
+
+{% block extra_head %}
+<style>
+  .hero {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 40px;
+    padding: 40px 0 0;
+  }
+  .hero-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--orange);
+  }
+  .hero-title {
+    font-size: clamp(36px, 7vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+  .hero-title span { color: var(--orange); }
+  .hero-sub {
+    font-size: 15px;
+    color: var(--text-2);
+    margin-top: 8px;
+    font-weight: 400;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Equalizer animation on playing card ── */
+  .eq-bars {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    padding: 16px;
+    background: rgba(0,0,0,0.55);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .song-card.playing .eq-bars { opacity: 1; }
+  .eq-bar {
+    width: 4px;
+    background: var(--orange);
+    border-radius: 2px;
+    animation: eqBounce 0.6s ease-in-out infinite alternate;
+  }
+  .eq-bar:nth-child(1) { animation-delay: 0s; }
+  .eq-bar:nth-child(2) { animation-delay: 0.1s; }
+  .eq-bar:nth-child(3) { animation-delay: 0.2s; }
+  .eq-bar:nth-child(4) { animation-delay: 0.05s; }
+  @keyframes eqBounce {
+    from { height: 6px; }
+    to { height: 28px; }
+  }
+
+  /* ── Staggered card animation ── */
+  .song-card {
+    animation: cardIn 0.4s ease both;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+  <div class="hero-eyebrow">🔥 Музыкальная платформа</div>
+  <h1 class="hero-title">Слушай <span>без границ</span></h1>
+  <p class="hero-sub">Независимая музыка от авторов — прямо сюда.</p>
+  <div class="hero-actions">
+    {% if user %}
+      <a href="/upload" class="btn btn-primary">+ Загрузить трек</a>
+      {% if songs %}<button class="btn btn-secondary" onclick="playAll()">▶ Слушать всё</button>{% endif %}
+    {% else %}
+      <a href="/login" class="btn btn-primary">Войти в HertMusic</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-header">
+  <div>
+    <div class="section-title">Все треки</div>
+    <div class="section-subtitle">{{ songs|length }} трек{{ 's' if songs|length != 1 else '' }}</div>
+  </div>
+</div>
+
+{% if songs %}
+<div class="songs-grid" id="songs-grid">
+  {% for song in songs %}
+  <div class="song-card" 
+       data-id="{{ song.id }}"
+       data-idx="{{ loop.index0 }}"
+       style="animation-delay: {{ loop.index0 * 0.04 }}s"
+       onclick="handleCardClick({{ loop.index0 }})">
+    <div class="song-cover-wrap">
+      <img class="song-cover"
+           src="/cover/{{ song.id }}"
+           alt="{{ song.title }}"
+           loading="lazy"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="cover-placeholder" style="display:none">🎵</div>
+      <div class="eq-bars">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+      <button class="song-play-btn" onclick="event.stopPropagation(); handleCardClick({{ loop.index0 }})">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+    <div class="song-title">{{ song.title }}</div>
+    <div class="song-artist">{{ song.artist }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="icon">🎶</div>
+  <h3>Пока пусто</h3>
+  <p>Будь первым — загрузи трек!</p>
+  {% if user %}
+  <a href="/upload" class="btn btn-primary" style="margin-top:24px">Загрузить трек</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Build playlist from server data
+  playlist = [
+    {% for song in songs %}
+    {
+      id: {{ song.id }},
+      title: {{ song.title | tojson }},
+      artist: {{ song.artist | tojson }},
+      audio_url: '/stream/{{ song.id }}',
+      cover_url: '/cover/{{ song.id }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  function handleCardClick(idx) {
+    if (currentIndex === idx) {
+      audio.paused ? audio.play() : audio.pause();
+    } else {
+      playSong(playlist[idx], idx);
+    }
+  }
+
+  function playAll() {
+    if (playlist.length > 0) playSong(playlist[0], 0);
+  }
+</script>
+{% endblock %}
