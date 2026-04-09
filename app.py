@@ -44,11 +44,11 @@ if _raw_unames:
 
 # Railway AWS-style bucket variables
 
-S3_ENDPOINT   = os.environ.get("AWS_ENDPOINT_URL_S3") or os.environ.get("RAILWAY_BUCKET_ENDPOINT_URL", "")
-S3_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("RAILWAY_BUCKET_ACCESS_KEY_ID", "")
-S3_SECRET_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY") or os.environ.get("RAILWAY_BUCKET_SECRET_ACCESS_KEY", "")
-S3_REGION     = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("RAILWAY_BUCKET_REGION", "auto")
-S3_BUCKET     = os.environ.get("BUCKET_NAME") or os.environ.get("AWS_BUCKET_NAME") or os.environ.get("RAILWAY_BUCKET_NAME", "")
+S3_ENDPOINT   = os.environ.get("AWS_ENDPOINT_URL", "")
+S3_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY_ID", "")
+S3_SECRET_KEY = os.environ.get("AWS_SECRET_KEY", "")
+S3_REGION     = os.environ.get("AWS_DEFAULT_REGION", "auto")
+S3_BUCKET     = os.environ.get("AWS_S3_BUCKET_NAME", "")
 
 def get_s3():
     return boto3.client(
