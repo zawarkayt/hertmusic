@@ -670,13 +670,12 @@
     return `${m}:${sec.toString().padStart(2, '0')}`;
   }
 
-  function playSong(song, idx) {
+ function playSong(song, idx) {
     currentIndex = idx;
     audio.src = song.audio_url;
     playerTitle.textContent = song.title;
     playerArtist.textContent = song.artist;
 
-    // Update cover
     const existingImg = playerCoverWrap.querySelector('img');
     if (existingImg) existingImg.remove();
     playerCoverPlaceholder.style.display = 'flex';
@@ -690,6 +689,27 @@
     audio.play().catch(() => {});
     updatePlayState(true);
     highlightCard(idx);
+
+    // Media Session API — локскрин / центр уведомлений
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: song.title,
+        artist: song.artist,
+        artwork: [
+          { src: song.cover_url, sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+      navigator.mediaSession.setActionHandler('play', () => audio.play());
+      navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        if (currentIndex > 0) playSong(playlist[currentIndex - 1], currentIndex - 1);
+        else playSong(playlist[playlist.length - 1], playlist.length - 1);
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (currentIndex < playlist.length - 1) playSong(playlist[currentIndex + 1], currentIndex + 1);
+        else playSong(playlist[0], 0);
+      });
+    }
   }
 
   function updatePlayState(playing) {
