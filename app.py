@@ -61,7 +61,6 @@ def get_s3():
     )
 
 def s3_upload(file_bytes: bytes, key: str, content_type: str) -> str | None:
-    """Upload bytes to S3, return public URL or None on error."""
     try:
         s3 = get_s3()
         s3.put_object(
@@ -69,10 +68,10 @@ def s3_upload(file_bytes: bytes, key: str, content_type: str) -> str | None:
             Key=key,
             Body=file_bytes,
             ContentType=content_type,
+            ACL="public-read",
         )
-        # Build public URL
         url = f"{S3_ENDPOINT.rstrip('/')}/{S3_BUCKET}/{key}"
-        print(f"[S3] uploaded {key} → {url}", flush=True)
+        print(f"[S3] uploaded {key} -> {url}", flush=True)
         return url
     except Exception as e:
         print(f"[S3] upload error: {e}", flush=True)
