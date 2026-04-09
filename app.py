@@ -46,7 +46,7 @@ if _raw_unames:
 
 S3_ENDPOINT   = os.environ.get("AWS_ENDPOINT_URL", "")
 S3_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY_ID", "")
-S3_SECRET_KEY = os.environ.get("AWS_SECRET_KEY", "")
+S3_SECRET_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 S3_REGION     = os.environ.get("AWS_DEFAULT_REGION", "auto")
 S3_BUCKET     = os.environ.get("AWS_S3_BUCKET_NAME", "")
 
