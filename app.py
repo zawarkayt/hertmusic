@@ -78,12 +78,17 @@ def tg_send_file(chat_id, file_bytes, filename, file_type='document', caption=''
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/send{file_type.capitalize()}'
     files_key = 'photo' if file_type == 'photo' else 'document'
     try:
-        r = requests.post(url, data={'chat_id': chat_id, 'caption': caption}, 
-                          files={files_key: (filename, file_bytes)}, timeout=60)
+        r = requests.post(
+            url,
+            data={'chat_id': chat_id, 'caption': caption},
+            files={files_key: (filename, file_bytes)},
+            timeout=300
+        )
         return r.json()
     except Exception as e:
         print(f'[TG] send_file error: {e}')
         return {}
+
 
 def tg_get_file_url(file_id):
     res = tg('getFile', file_id=file_id)
