@@ -195,10 +195,12 @@ def upload():
                     file_type='photo',
                     caption=f'🖼 Обложка: {title} — {artist}'
                 )
+                print(f'[TG COVER] {cover_res}', flush=True)
                 cover_file_id = None
                 if cover_res.get('ok'):
                     photos = cover_res['result'].get('photo', [])
                     if photos:
+                        cover_file_id = photos[-1]['file_id']
                         cover_file_id = photos[-1]['file_id']
 
                 # Send audio to Telegram for storage
