@@ -68,7 +68,6 @@ def s3_upload(file_bytes: bytes, key: str, content_type: str) -> str | None:
             Key=key,
             Body=file_bytes,
             ContentType=content_type,
-            ACL="public-read",
         )
         url = f"{S3_ENDPOINT.rstrip('/')}/{S3_BUCKET}/{key}"
         print(f"[S3] uploaded {key} -> {url}", flush=True)
@@ -391,29 +390,31 @@ def serve_cover(song_id):
     song = db.session.get(Song, song_id)
     if not song or not song.cover_file_id:
         abort(404)
-    # cover_file_id is now a direct S3 URL
-    return redirect(song.cover_file_id)
+    # Extract key from stored URL
+    key = song.cover_file_id.split(f"{S3_BUCKET}/", 1)[-1]
+    url = s3_presign(key, expires=3600)
+    if not url:
+        abort(404)
+    return redirect(url)
 
 @app.route("/stream/<int:song_id>")
 def stream_audio(song_id):
     song = db.session.get(Song, song_id)
     if not song or song.status != "approved" or not song.audio_file_id:
         abort(404)
-
-    # audio_file_id is now a direct S3 URL
-    audio_url = song.audio_file_id
-
+    key = song.audio_file_id.split(f"{S3_BUCKET}/", 1)[-1]
+    url = s3_presign(key, expires=3600)
+    if not url:
+        abort(500)
     range_header = request.headers.get("Range")
     req_headers = {}
     if range_header:
         req_headers["Range"] = range_header
-
     try:
-        s3_resp = requests.get(audio_url, headers=req_headers, stream=True, timeout=10)
+        s3_resp = requests.get(url, headers=req_headers, stream=True, timeout=10)
     except Exception as e:
         print(f"[STREAM] error: {e}", flush=True)
         abort(500)
-
     headers = {
         "Content-Type": s3_resp.headers.get("Content-Type", "audio/mpeg"),
         "Accept-Ranges": "bytes",
@@ -423,7 +424,6 @@ def stream_audio(song_id):
         headers["Content-Length"] = s3_resp.headers["Content-Length"]
     if "Content-Range" in s3_resp.headers:
         headers["Content-Range"] = s3_resp.headers["Content-Range"]
-
     return Response(
         stream_with_context(s3_resp.iter_content(chunk_size=65536)),
         status=s3_resp.status_code,
