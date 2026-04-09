@@ -172,6 +172,7 @@ def upload():
     success = None
 
     if request.method == 'POST':
+        print(f'[UPLOAD] cover={request.files.get("cover")}, audio={request.files.get("audio")}, cover_size={request.files.get("cover").content_length if request.files.get("cover") else 0}', flush=True)
         print(f'[UPLOAD] form={dict(request.form)}, files={list(request.files.keys())}', flush=True)
         title = request.form.get('title', '').strip()
         artist = request.form.get('artist', '').strip()
