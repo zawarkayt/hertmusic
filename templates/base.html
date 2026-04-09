@@ -767,26 +767,30 @@
     audio.muted = false;
   });
 
-  // ─── Telegram WebApp auth ─────────────────────────────────────────────────
-  (async function() {
-    if (window.Telegram && window.Telegram.WebApp) {
-      const twa = window.Telegram.WebApp;
-      twa.ready();
-      twa.expand();
-      document.body.classList.add('tg-app');
-      const initData = twa.initData;
-      if (initData && !document.cookie.includes('session')) {
-        try {
-          const res = await fetch('/api/tg-auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData })
-          });
-          if (res.ok) location.reload();
-        } catch(e) {}
+// ─── Telegram WebApp auth ─────────────────────────────────────────────────
+(async function() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    const twa = window.Telegram.WebApp;
+    twa.ready();
+    twa.expand();
+    document.body.classList.add('tg-app');
+    const initData = twa.initData;
+    if (!initData) return;
+    try {
+      const res = await fetch('/api/tg-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ initData })
+      });
+      const data = await res.json();
+      if (data.ok && !data.already_logged_in) {
+        location.reload();
       }
-    }
-  })();
+    } catch(e) {}
+  }
+})();
+
   </script>
 
   {% block scripts %}{% endblock %}
