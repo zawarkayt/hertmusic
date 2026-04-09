@@ -178,6 +178,7 @@ def upload():
         artist = request.form.get('artist', '').strip()
         cover_file = request.files.get('cover')
         audio_file = request.files.get('audio')
+        print(f'[UPLOAD] title={repr(title)} artist={repr(artist)} cover={cover_file} cover_fname={getattr(cover_file, "filename", None)} audio={audio_file} audio_fname={getattr(audio_file, "filename", None)}', flush=True)
 
         if not all([title, artist, cover_file, audio_file]):
             error = 'Заполни все поля'
