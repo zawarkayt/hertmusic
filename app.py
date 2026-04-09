@@ -272,7 +272,6 @@ def admin():
 
 @app.route('/api/tg-auth', methods=['POST'])
 def tg_auth():
-    """Authenticate Telegram Mini App user via initData."""
     data = request.get_json(force=True)
     init_data = data.get('initData', '')
     valid, tg_user = verify_tg_webapp(init_data)
@@ -282,6 +281,10 @@ def tg_auth():
     tg_id = tg_user.get('id')
     if not tg_id:
         return jsonify({'error': 'no_user_id'}), 400
+
+    # Уже залогинен — ничего не делаем
+    if session.get('user_id'):
+        return jsonify({'ok': True, 'already_logged_in': True})
 
     user = User.query.filter_by(telegram_id=tg_id).first()
     if not user:
@@ -294,7 +297,9 @@ def tg_auth():
         db.session.commit()
 
     session['user_id'] = user.id
-    return jsonify({'ok': True, 'user': user.to_dict()})
+    session.permanent = True
+    return jsonify({'ok': True, 'already_logged_in': False, 'user': user.to_dict()})
+
 
 @app.route('/api/songs')
 def api_songs():
