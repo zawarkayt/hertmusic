@@ -460,11 +460,10 @@ def telegram_webhook():
 
 @app.route('/setup-webhook')
 def setup_webhook():
-    """Call once to register webhook. Protect this in production."""
-    base_url = request.host_url.rstrip('/')
+    base_url = request.host_url.rstrip('/').replace('http://', 'https://')
     webhook_url = f'{base_url}/webhook/{WEBHOOK_SECRET}'
-    res = tg('setWebhook', url=webhook_url)
-    return jsonify(res)
+    return jsonify({'webhook_url': webhook_url, 'result': tg('setWebhook', url=webhook_url)})
+
 
 
 if __name__ == '__main__':
