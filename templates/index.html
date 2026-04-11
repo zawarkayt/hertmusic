@@ -1,64 +1,11 @@
-{% extends "base.html" %}
-{% block title %}HertMusic — Слушай всё{% endblock %}
-{% block content %}
-
-<div class="hero">
-  <div class="hero-eye">🔥 Музыкальная платформа</div>
-  <h1 class="hero-title">Слушай <span>без границ</span></h1>
-  <p class="hero-sub">Независимая музыка от авторов — прямо сюда.</p>
-  <div class="hero-actions">
-    {% if user %}
-      <a href="/upload" class="btn btn-primary spa-link">+ Загрузить трек</a>
-      {% if songs %}<button class="btn btn-secondary" onclick="window.playSong(window.playlist[0],0)">▶ Слушать всё</button>{% endif %}
-    {% else %}
-      <a href="/login" class="btn btn-primary spa-link">Войти в HertMusic</a>
-    {% endif %}
-  </div>
-</div>
-
-<div class="sec-hdr">
-  <div>
-    <div class="sec-title">Все треки</div>
-    <div class="sec-sub">{{ songs|length }} трек{{ 'ов' if songs|length > 1 else '' }}</div>
-  </div>
-</div>
-
-{% if songs %}
-<div class="songs-grid">
-  {% for song in songs %}
-  <div class="song-card" style="animation-delay:{{ loop.index0 * 0.04 }}s" onclick="handleCard({{ loop.index0 }})">
-    <div class="cover-wrap">
-      <img class="cover-img" src="/cover/{{ song.id }}" alt="{{ song.title }}" loading="lazy"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <div class="cover-ph" style="display:none">🎵</div>
-      <div class="eq-bars"><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div></div>
-      <button class="play-fab" onclick="event.stopPropagation();handleCard({{ loop.index0 }})">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      </button>
-    </div>
-    <div class="song-title">{{ song.title }}</div>
-    <div class="song-artist">{{ song.artist }}</div>
-  </div>
-  {% endfor %}
-</div>
-{% else %}
-<div class="empty">
-  <div class="ico">🎶</div>
-  <h3>Пока пусто</h3>
-  <p>Будь первым — загрузи трек!</p>
-  {% if user %}<a href="/upload" class="btn btn-primary spa-link" style="margin-top:22px">Загрузить трек</a>{% endif %}
-</div>
-{% endif %}
-
-<script>
-window.playlist = [
-  {% for song in songs %}
-  {id:{{ song.id }},title:{{ song.title|tojson }},artist:{{ song.artist|tojson }},audio_url:"/stream/{{ song.id }}",cover_url:"/cover/{{ song.id }}"}{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
-window.handleCard = function(idx){
-  if(window.currentIndex===idx){ window._aud?.()||document.getElementById("aud").paused?document.getElementById("aud").play():document.getElementById("aud").pause(); }
-  else window.playSong(window.playlist[idx],idx);
-};
-</script>
-{% endblock %}
+ncaught TypeError: Cannot read properties of undefined (reading 'audio_url')
+    at window.playSong ((index):685:18)
+    at window.handleCard ((index):621:15)
+    at HTMLDivElement.onclick ((index):436:79)
+window.playSong @ (index):685
+window.handleCard @ (index):621
+onclick @ (index):436
+(index):685 Uncaught TypeError: Cannot read properties of undefined (reading 'audio_url')
+    at window.playSong ((index):685:18)
+    at window.handleCard ((index):621:15)
+    at HTMLDivElement.onclick ((index):450:80)
