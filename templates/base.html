@@ -548,12 +548,12 @@ window.spaNavigate = async function(url, push=true){
     if(!newContent){ window.location.href=url; return; }
 
     const oldContent = document.getElementById("spa-content");
-    // Run inline scripts from new page — attach to window so onclick="" works
+    // Insert first, THEN run scripts so onclick="" can find elements
+    oldContent.replaceWith(newContent);
+
     newContent.querySelectorAll("script").forEach(s=>{
       try{ new Function(s.textContent).call(window); } catch(e){ console.warn("[SPA] script error",e); }
     });
-
-    oldContent.replaceWith(newContent);
     const t = doc.querySelector("title");
     if(t) document.title = t.textContent;
     if(push) history.pushState({url},"",url);
