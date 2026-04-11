@@ -1,179 +1,141 @@
 {% extends "base.html" %}
 {% block title %}Плейлисты — HertMusic{% endblock %}
-
-{% block extra_head %}
-<style>
-  .tabs { display:flex; gap:4px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:4px; margin-bottom:28px; width:fit-content; }
-  .tab { font-size:13px; font-weight:700; padding:8px 18px; border-radius:8px; cursor:pointer; color:var(--text-2); border:none; background:none; font-family:'Manrope',sans-serif; transition:all 0.15s; }
-  .tab:hover { color:var(--text); }
-  .tab.active { background:var(--bg-card); color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
-  .tab-panel { display:none; }
-  .tab-panel.active { display:block; }
-</style>
-{% endblock %}
-
 {% block content %}
-<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px;">
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;flex-wrap:wrap;gap:12px">
   <div>
-    <h1 style="font-size:clamp(24px,5vw,36px); font-weight:800;">Плейлисты</h1>
-    <p style="color:var(--text-2); font-size:14px; margin-top:6px;">Твои и публичные коллекции</p>
+    <h1 style="font-size:clamp(22px,5vw,34px);font-weight:800">Плейлисты</h1>
+    <p style="color:var(--text-2);font-size:13px;margin-top:5px">Твои и публичные коллекции</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateModal()">+ Новый плейлист</button>
+  <button class="btn btn-primary" onclick="window.openCreateModal()">+ Новый плейлист</button>
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('my')">Мои</button>
-  <button class="tab" onclick="switchTab('public')">Публичные</button>
+  <button class="tab active" id="tab-btn-my" onclick="window.switchTab('my',this)">Мои ({{ my_playlists|length }})</button>
+  <button class="tab" id="tab-btn-public" onclick="window.switchTab('public',this)">Публичные ({{ public_playlists|length }})</button>
 </div>
 
-<!-- My playlists -->
+<!-- My -->
 <div class="tab-panel active" id="tab-my">
-  <div class="search-wrap" style="max-width:400px;">
-    <span class="search-icon">🔍</span>
-    <input class="search-input" type="text" placeholder="Поиск по моим плейлистам..." id="search-my" oninput="filterMy(this.value)">
+  <div class="search-wrap" style="max-width:380px">
+    <span class="search-ico">🔍</span>
+    <input class="search-inp" type="text" placeholder="Поиск по своим..." oninput="window.filterMy(this.value)">
   </div>
   {% if my_playlists %}
-  <div class="playlists-grid" id="grid-my">
+  <div class="pl-grid" id="grid-my">
     {% for pl in my_playlists %}
-    <div class="playlist-card" onclick="goPlaylist({{ pl.id }})" data-name="{{ pl.name|lower }}">
-      <div class="playlist-cover-empty">🎵</div>
-      <div class="playlist-name">{{ pl.name }}</div>
-      <div class="playlist-meta">
-        <span>{{ pl.items|length }} трек{{ 'ов' if pl.items|length != 1 else '' }}</span>
-        {% if pl.is_public %}
-        <span class="badge-public">Публичный</span>
-        {% else %}
-        <span class="badge-private">Приватный</span>
-        {% endif %}
+    <div class="pl-card" onclick="window.spaNavigate('/playlists/{{ pl.id }}')" data-name="{{ pl.name|lower }}">
+      <div class="pl-cover-ph">🎵</div>
+      <div class="pl-name">{{ pl.name }}</div>
+      <div class="pl-meta">
+        <span>{{ pl.items|length }} тр.</span>
+        {% if pl.is_public %}<span class="badge-pub">Публичный</span>{% else %}<span class="badge-priv">Приватный</span>{% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">
-    <div class="icon">🎵</div>
+  <div class="empty">
+    <div class="ico">🎵</div>
     <h3>Нет плейлистов</h3>
-    <p>Создай свой первый плейлист!</p>
-    <button class="btn btn-primary" style="margin-top:20px;" onclick="openCreateModal()">+ Создать</button>
+    <p>Создай свой первый!</p>
+    <button class="btn btn-primary" style="margin-top:18px" onclick="window.openCreateModal()">+ Создать</button>
   </div>
   {% endif %}
 </div>
 
-<!-- Public playlists -->
+<!-- Public -->
 <div class="tab-panel" id="tab-public">
-  <div class="search-wrap" style="max-width:400px;">
-    <span class="search-icon">🔍</span>
-    <input class="search-input" type="text" placeholder="Поиск публичных плейлистов..." id="search-public" oninput="searchPublic(this.value)">
+  <div class="search-wrap" style="max-width:380px">
+    <span class="search-ico">🔍</span>
+    <input class="search-inp" type="text" placeholder="Поиск публичных..." oninput="window.searchPublic(this.value)">
   </div>
-  <div class="playlists-grid" id="grid-public">
+  <div class="pl-grid" id="grid-public">
     {% for pl in public_playlists %}
-    <div class="playlist-card" onclick="goPlaylist({{ pl.id }})">
-      <div class="playlist-cover-empty">🎵</div>
-      <div class="playlist-name">{{ pl.name }}</div>
-      <div class="playlist-meta">
-        <span>{{ pl.items|length }} трек{{ 'ов' if pl.items|length != 1 else '' }}</span>
-        <span style="color:var(--text-3);">{{ pl.owner.telegram_first_name or pl.owner.telegram_username or '?' }}</span>
+    <div class="pl-card" onclick="window.spaNavigate('/playlists/{{ pl.id }}')">
+      <div class="pl-cover-ph">🎵</div>
+      <div class="pl-name">{{ pl.name }}</div>
+      <div class="pl-meta">
+        <span>{{ pl.items|length }} тр.</span>
+        <span>{{ pl.owner.telegram_first_name or pl.owner.telegram_username or '?' }}</span>
       </div>
     </div>
     {% endfor %}
     {% if not public_playlists %}
-    <p style="color:var(--text-3); font-size:14px; grid-column:1/-1;">Нет публичных плейлистов</p>
+    <p style="color:var(--text-3);font-size:13px;grid-column:1/-1">Нет публичных плейлистов</p>
     {% endif %}
   </div>
 </div>
 
-<!-- Create Modal -->
-<div class="modal-overlay" id="create-modal" style="display:none;" onclick="if(event.target===this)closeCreateModal()">
+<!-- Create modal -->
+<div class="modal-ov" id="create-modal" style="display:none" onclick="if(event.target===this)window.closeCreateModal()">
   <div class="modal">
-    <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    <button class="modal-x" onclick="window.closeCreateModal()">✕</button>
     <div class="modal-title">Новый плейлист</div>
-    <div id="create-error" style="display:none;" class="error-msg"></div>
+    <div id="create-err" class="err" style="display:none"></div>
     <div class="form-group">
       <label class="form-label">Название *</label>
       <input class="form-input" type="text" id="pl-name" placeholder="Например: Утренний кайф" maxlength="100">
     </div>
     <div class="form-group">
       <label class="form-label">Описание</label>
-      <input class="form-input form-textarea" type="text" id="pl-desc" placeholder="Необязательно..." maxlength="300">
+      <input class="form-input" type="text" id="pl-desc" placeholder="Необязательно..." maxlength="300">
     </div>
     <div class="form-group">
       <label class="form-label">Видимость</label>
-      <select class="form-input form-select" id="pl-public">
+      <select class="form-input form-select" id="pl-pub">
         <option value="1">🌍 Публичный — виден всем</option>
         <option value="0">🔒 Приватный — только ты</option>
       </select>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="createPlaylist()">Создать плейлист</button>
+    <button class="btn btn-primary" style="width:100%;padding:12px" onclick="window.createPlaylist()">Создать плейлист</button>
   </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-function switchTab(name) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.getElementById("tab-" + name).classList.add("active");
-  event.target.classList.add("active");
-}
+window.switchTab = function(name, btn){
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  if(btn) btn.classList.add("active");
+};
 
-function goPlaylist(id) {
-  spaNavigate("/playlists/" + id);
-}
-
-function filterMy(q) {
-  document.querySelectorAll("#grid-my .playlist-card").forEach(c => {
+window.filterMy = function(q){
+  document.querySelectorAll("#grid-my .pl-card").forEach(c=>{
     c.style.display = c.dataset.name.includes(q.toLowerCase()) ? "" : "none";
   });
-}
+};
 
-let searchTimer;
-function searchPublic(q) {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(async () => {
-    const res = await fetch("/api/playlists?q=" + encodeURIComponent(q), { credentials: "include" });
-    const data = await res.json();
+let _st;
+window.searchPublic = function(q){
+  clearTimeout(_st);
+  _st = setTimeout(async()=>{
+    const r = await fetch("/api/playlists?q="+encodeURIComponent(q),{credentials:"include"});
+    const data = await r.json();
     const grid = document.getElementById("grid-public");
-    grid.innerHTML = data.length ? data.map(p => `
-      <div class="playlist-card" onclick="goPlaylist(${p.id})">
-        <div class="playlist-cover-empty">🎵</div>
-        <div class="playlist-name">${escHtml(p.name)}</div>
-        <div class="playlist-meta">
-          <span>${p.song_count} трек${p.song_count !== 1 ? "ов" : ""}</span>
-          <span style="color:var(--text-3);">${escHtml(p.owner_name)}</span>
-        </div>
-      </div>`).join("") : '<p style="color:var(--text-3);font-size:14px;grid-column:1/-1;">Ничего не найдено</p>';
-  }, 300);
-}
+    grid.innerHTML = data.length
+      ? data.map(p=>`<div class="pl-card" onclick="window.spaNavigate('/playlists/${p.id}')"><div class="pl-cover-ph">🎵</div><div class="pl-name">${_esc(p.name)}</div><div class="pl-meta"><span>${p.song_count} тр.</span><span>${_esc(p.owner_name)}</span></div></div>`).join("")
+      : '<p style="color:var(--text-3);font-size:13px;grid-column:1/-1">Ничего не найдено</p>';
+  },300);
+};
 
-function openCreateModal() { document.getElementById("create-modal").style.display = "flex"; }
-function closeCreateModal() { document.getElementById("create-modal").style.display = "none"; }
+window.openCreateModal  = function(){ document.getElementById("create-modal").style.display="flex"; };
+window.closeCreateModal = function(){ document.getElementById("create-modal").style.display="none"; };
 
-async function createPlaylist() {
-  const name = document.getElementById("pl-name").value.trim();
-  const errEl = document.getElementById("create-error");
-  if (!name) { errEl.textContent = "Введи название"; errEl.style.display = "block"; return; }
-  errEl.style.display = "none";
-  const res = await fetch("/api/playlists", {
-    method: "POST", credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      description: document.getElementById("pl-desc").value.trim(),
-      is_public: document.getElementById("pl-public").value === "1"
-    })
+window.createPlaylist = async function(){
+  const name  = document.getElementById("pl-name").value.trim();
+  const errEl = document.getElementById("create-err");
+  if(!name){ errEl.textContent="Введи название"; errEl.style.display="block"; return; }
+  errEl.style.display="none";
+  const r = await fetch("/api/playlists",{
+    method:"POST",credentials:"include",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,description:document.getElementById("pl-desc").value.trim(),is_public:document.getElementById("pl-pub").value==="1"})
   });
-  if (res.ok) {
-    const pl = await res.json();
-    closeCreateModal();
-    spaNavigate("/playlists/" + pl.id);
-  } else {
-    errEl.textContent = "Ошибка создания"; errEl.style.display = "block";
-  }
-}
+  if(r.ok){ const pl=await r.json(); window.closeCreateModal(); window.spaNavigate("/playlists/"+pl.id); }
+  else{ errEl.textContent="Ошибка создания"; errEl.style.display="block"; }
+};
 
-function escHtml(s) {
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+function _esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 </script>
 {% endblock %}
