@@ -1,196 +1,145 @@
 {% extends "base.html" %}
 {% block title %}{{ playlist.name }} — HertMusic{% endblock %}
-
 {% block content %}
-<div class="pl-header">
-  <div class="pl-header-cover">🎵</div>
-  <div class="pl-header-info">
-    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-      {% if playlist.is_public %}
-      <span class="badge-public">🌍 Публичный</span>
-      {% else %}
-      <span class="badge-private">🔒 Приватный</span>
-      {% endif %}
+
+<div class="pl-hdr">
+  <div class="pl-hdr-cover">🎵</div>
+  <div class="pl-hdr-info">
+    <div style="margin-bottom:9px">
+      {% if playlist.is_public %}<span class="badge-pub">🌍 Публичный</span>{% else %}<span class="badge-priv">🔒 Приватный</span>{% endif %}
     </div>
     <h1>{{ playlist.name }}</h1>
-    {% if playlist.description %}
-    <p style="color:var(--text-2); font-size:14px; margin-top:8px;">{{ playlist.description }}</p>
-    {% endif %}
-    <div class="meta" style="margin-top:10px;">
-      {{ playlist.items|length }} трек{{ 'ов' if playlist.items|length != 1 else '' }}
-      · {{ playlist.owner.telegram_first_name or playlist.owner.telegram_username or '?' }}
-    </div>
-    <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
-      {% if playlist.items %}
-      <button class="btn btn-primary" onclick="playAll()">▶ Играть всё</button>
-      {% endif %}
+    {% if playlist.description %}<p style="color:var(--text-2);font-size:13px;margin-top:7px">{{ playlist.description }}</p>{% endif %}
+    <div class="pl-hdr-meta">{{ playlist.items|length }} трек{{ 'ов' if playlist.items|length > 1 else '' }} · {{ playlist.owner.telegram_first_name or playlist.owner.telegram_username or '?' }}</div>
+    <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap">
+      {% if playlist.items %}<button class="btn btn-primary" onclick="window.playAll()">▶ Играть всё</button>{% endif %}
       {% if playlist.owner_id == user.id %}
-      <button class="btn btn-secondary" onclick="openAddModal()">+ Добавить треки</button>
-      <button class="btn btn-danger btn-sm" onclick="deletePlaylist()">🗑 Удалить</button>
+        <button class="btn btn-secondary" onclick="window.openAddModal()">+ Добавить треки</button>
+        <button class="btn btn-danger btn-sm" onclick="window.deletePl()">🗑 Удалить</button>
       {% endif %}
     </div>
   </div>
 </div>
 
 {% if playlist.items %}
-<div class="pl-song-list" id="pl-song-list">
+<div class="pl-rows" id="pl-rows">
   {% for item in playlist.items %}
   {% set song = item.song %}
-  <div class="pl-song-row" data-idx="{{ loop.index0 }}" onclick="playIdx({{ loop.index0 }})">
-    <div class="pl-song-num">{{ loop.index }}</div>
-    <img class="pl-song-cover" src="/cover/{{ song.id }}" alt=""
-         onerror="this.style.display='none'">
-    <div class="pl-song-info">
-      <div class="pl-song-title">{{ song.title }}</div>
-      <div class="pl-song-artist">{{ song.artist }}</div>
+  <div class="pl-row" onclick="window.playIdx({{ loop.index0 }})">
+    <div class="pl-num">{{ loop.index }}</div>
+    <img class="pl-row-cover" src="/cover/{{ song.id }}" alt="" onerror="this.style.display='none'">
+    <div class="pl-row-info">
+      <div class="pl-row-title">{{ song.title }}</div>
+      <div class="pl-row-artist">{{ song.artist }}</div>
     </div>
     {% if playlist.owner_id == user.id %}
-    <button class="pl-song-remove" onclick="event.stopPropagation(); removeSong({{ song.id }}, this)" title="Убрать">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-        <path d="M18 6 6 18M6 6l12 12"/>
-      </svg>
+    <button class="pl-row-rm" onclick="event.stopPropagation();window.removeSong({{ song.id }},this)" title="Убрать">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
     {% endif %}
   </div>
   {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">
-  <div class="icon">🎵</div>
+<div class="empty">
+  <div class="ico">🎵</div>
   <h3>Плейлист пуст</h3>
   {% if playlist.owner_id == user.id %}
   <p>Добавь треки из библиотеки</p>
-  <button class="btn btn-primary" style="margin-top:20px;" onclick="openAddModal()">+ Добавить треки</button>
+  <button class="btn btn-primary" style="margin-top:18px" onclick="window.openAddModal()">+ Добавить треки</button>
   {% endif %}
 </div>
 {% endif %}
 
-<!-- Add songs modal -->
+<!-- Add modal -->
 {% if playlist.owner_id == user.id %}
-<div class="modal-overlay" id="add-modal" style="display:none;" onclick="if(event.target===this)closeAddModal()">
-  <div class="modal" style="max-width:520px;">
-    <button class="modal-close" onclick="closeAddModal()">✕</button>
+<div class="modal-ov" id="add-modal" style="display:none" onclick="if(event.target===this)window.closeAddModal()">
+  <div class="modal" style="max-width:500px">
+    <button class="modal-x" onclick="window.closeAddModal()">✕</button>
     <div class="modal-title">Добавить треки</div>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input class="search-input" type="text" placeholder="Поиск треков..." id="song-search" oninput="filterSongs(this.value)">
+      <span class="search-ico">🔍</span>
+      <input class="search-inp" type="text" placeholder="Поиск..." oninput="window.filterAddSongs(this.value)">
     </div>
-    <div id="songs-list" style="max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+    <div id="add-list" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:5px">
       {% for song in all_songs %}
-      <div class="pl-song-row" id="add-row-{{ song.id }}" data-title="{{ song.title|lower }}" data-artist="{{ song.artist|lower }}">
-        <img class="pl-song-cover" src="/cover/{{ song.id }}" alt="" onerror="this.style.display='none'">
-        <div class="pl-song-info">
-          <div class="pl-song-title">{{ song.title }}</div>
-          <div class="pl-song-artist">{{ song.artist }}</div>
+      <div class="pl-row" id="add-row-{{ song.id }}" data-t="{{ song.title|lower }}" data-a="{{ song.artist|lower }}" style="cursor:default">
+        <img class="pl-row-cover" src="/cover/{{ song.id }}" alt="" onerror="this.style.display='none'">
+        <div class="pl-row-info">
+          <div class="pl-row-title">{{ song.title }}</div>
+          <div class="pl-row-artist">{{ song.artist }}</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="addSong({{ song.id }}, this)">+</button>
+        <button class="btn btn-primary btn-xs" onclick="window.addSong({{ song.id }},this)">+</button>
       </div>
+      {% else %}
+      <p style="color:var(--text-3);font-size:13px">Нет одобренных треков</p>
       {% endfor %}
     </div>
   </div>
 </div>
 {% endif %}
-{% endblock %}
 
-{% block scripts %}
 <script>
-const PL_ID = {{ playlist.id }};
-const IS_OWNER = {{ 'true' if playlist.owner_id == user.id else 'false' }};
+const _PL_ID = {{ playlist.id }};
 
-// Build playlist for player
-playlist = [
-  {% for item in playlist.items %}
-  {% set song = item.song %}
-  {
-    id: {{ song.id }},
-    title: {{ song.title | tojson }},
-    artist: {{ song.artist | tojson }},
-    audio_url: "/stream/{{ song.id }}",
-    cover_url: "/cover/{{ song.id }}"
-  }{% if not loop.last %},{% endif %}
-  {% endfor %}
+window.playlist = [
+  {% for item in playlist.items %}{% set s=item.song %}{id:{{ s.id }},title:{{ s.title|tojson }},artist:{{ s.artist|tojson }},audio_url:"/stream/{{ s.id }}",cover_url:"/cover/{{ s.id }}"}{% if not loop.last %},{% endif %}{% endfor %}
 ];
 
-function playIdx(idx) {
-  if (currentIndex === idx) {
-    audio.paused ? audio.play() : audio.pause();
-  } else {
-    playSong(playlist[idx], idx);
-  }
-}
+window.playIdx = function(idx){
+  if(window.currentIndex===idx){ const a=document.getElementById("aud"); a.paused?a.play():a.pause(); }
+  else window.playSong(window.playlist[idx],idx);
+};
 
-function playAll() {
-  if (playlist.length > 0) playSong(playlist[0], 0);
-}
+window.playAll = function(){
+  if(window.playlist.length) window.playSong(window.playlist[0],0);
+};
 
-async function removeSong(songId, btn) {
-  btn.disabled = true;
-  const res = await fetch(`/api/playlists/${PL_ID}/songs/${songId}`, {
-    method: "DELETE", credentials: "include"
+window.openAddModal  = function(){ document.getElementById("add-modal").style.display="flex"; };
+window.closeAddModal = function(){ document.getElementById("add-modal").style.display="none"; };
+
+window.filterAddSongs = function(q){
+  q=q.toLowerCase();
+  document.querySelectorAll("#add-list .pl-row").forEach(r=>{
+    r.style.display=(r.dataset.t.includes(q)||r.dataset.a.includes(q))?"":"none";
   });
-  if (res.ok) {
-    const row = btn.closest(".pl-song-row");
-    row.style.opacity = "0";
-    row.style.transform = "translateX(20px)";
-    row.style.transition = "all 0.2s";
-    setTimeout(() => { row.remove(); rebuildPlaylist(); }, 200);
-  } else {
-    btn.disabled = false;
-  }
-}
+};
 
-function rebuildPlaylist() {
-  const rows = document.querySelectorAll(".pl-song-row[data-idx]");
-  playlist = [];
-  rows.forEach((row, i) => {
-    row.dataset.idx = i;
-    const title = row.querySelector(".pl-song-title").textContent;
-    const artist = row.querySelector(".pl-song-artist").textContent;
-    const img = row.querySelector("img");
-    const songId = row.querySelector(".pl-song-remove")
-      ? row.querySelector(".pl-song-remove").getAttribute("onclick").match(/\d+/)[0]
-      : null;
-    if (songId) playlist.push({
-      id: parseInt(songId), title, artist,
-      audio_url: `/stream/${songId}`, cover_url: `/cover/${songId}`
-    });
+window.addSong = async function(sid, btn){
+  btn.textContent="..."; btn.disabled=true;
+  const r=await fetch(`/api/playlists/${_PL_ID}/songs`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({song_id:sid})});
+  if(r.ok){ btn.textContent="✓"; btn.classList.replace("btn-primary","btn-secondary"); }
+  else{ const d=await r.json(); btn.textContent=d.error==="already in playlist"?"✓":"!"; btn.disabled=false; }
+};
+
+window.removeSong = async function(sid, btn){
+  btn.disabled=true;
+  const r=await fetch(`/api/playlists/${_PL_ID}/songs/${sid}`,{method:"DELETE",credentials:"include"});
+  if(r.ok){
+    const row=btn.closest(".pl-row");
+    row.style.transition="all .2s"; row.style.opacity="0"; row.style.transform="translateX(16px)";
+    setTimeout(()=>{ row.remove(); _rebuildPl(); },200);
+  } else btn.disabled=false;
+};
+
+window.deletePl = async function(){
+  if(!confirm("Удалить плейлист?")) return;
+  const r=await fetch(`/api/playlists/${_PL_ID}`,{method:"DELETE",credentials:"include"});
+  if(r.ok) window.spaNavigate("/playlists");
+};
+
+function _rebuildPl(){
+  const rows=document.querySelectorAll("#pl-rows .pl-row");
+  window.playlist=[];
+  rows.forEach((row)=>{
+    const t=row.querySelector(".pl-row-title")?.textContent||"";
+    const a=row.querySelector(".pl-row-artist")?.textContent||"";
+    const rmBtn=row.querySelector(".pl-row-rm");
+    if(rmBtn){
+      const m=rmBtn.getAttribute("onclick").match(/\d+/);
+      if(m){ const id=parseInt(m[0]); window.playlist.push({id,title:t,artist:a,audio_url:"/stream/"+id,cover_url:"/cover/"+id}); }
+    }
   });
-}
-
-async function deletePlaylist() {
-  if (!confirm("Удалить плейлист?")) return;
-  const res = await fetch(`/api/playlists/${PL_ID}`, { method: "DELETE", credentials: "include" });
-  if (res.ok) spaNavigate("/playlists");
-}
-
-function openAddModal() { document.getElementById("add-modal").style.display = "flex"; }
-function closeAddModal() { document.getElementById("add-modal").style.display = "none"; }
-
-function filterSongs(q) {
-  q = q.toLowerCase();
-  document.querySelectorAll("#songs-list .pl-song-row").forEach(row => {
-    const match = row.dataset.title.includes(q) || row.dataset.artist.includes(q);
-    row.style.display = match ? "" : "none";
-  });
-}
-
-async function addSong(songId, btn) {
-  btn.textContent = "...";
-  btn.disabled = true;
-  const res = await fetch(`/api/playlists/${PL_ID}/songs`, {
-    method: "POST", credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ song_id: songId })
-  });
-  if (res.ok) {
-    btn.textContent = "✓";
-    btn.classList.remove("btn-primary");
-    btn.classList.add("btn-secondary");
-  } else {
-    const d = await res.json();
-    btn.textContent = d.error === "already in playlist" ? "✓" : "!";
-    btn.disabled = false;
-  }
 }
 </script>
 {% endblock %}
